@@ -37,7 +37,7 @@ namespace CourseWork.BusinessLogic.Services.Implementations
                     Task<string> calculationTask = Task.Run(() =>
                     {
                         string calculationResults = string.Empty;
-                        PerformCalculations(inputArray, R, threadAmount, out calculationResults);
+                        PerformSearch(inputArray, R, threadAmount, out calculationResults);
                         return calculationResults;
                     });
 
@@ -117,9 +117,9 @@ namespace CourseWork.BusinessLogic.Services.Implementations
             }
         }
 
-        public static void PerformCalculations(byte[] data, int range, int threadAmount, out string results)
+        public static void PerformSearch(byte[] data, int range, int threadAmount, out string results)
         {
-            results = string.Empty;// Lab4_server.Services.Calculate(data, range, threadAmount);
+            results = string.Empty; // call index service method FindFiles
         }
 
         public static void SendResults(TcpClient client, NetworkStream stream, string result)

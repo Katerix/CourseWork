@@ -1,15 +1,19 @@
-﻿using CourseWork.BusinessLogic.Services.Implementations;
+﻿using CourseWork.BusinessLogic.Services.Contracts;
+using CourseWork.BusinessLogic.Services.Implementations;
 using System.Net;
 using System.Net.Sockets;
 
 class Server
 {
     private readonly IPAddress _ipAddress;
+
     private readonly int _port;
 
     public readonly TcpListener _listener;
 
     public bool IsActive { get; set; }
+
+    protected readonly IIndexService _indexService;
 
     public Server()
     {
@@ -17,6 +21,9 @@ class Server
         _port = 6666;
         _listener = new TcpListener(_ipAddress, _port);
 
+        _indexService = new IndexService();
+        _indexService.InitIndex();
+        
         IsActive = true;
     }
 
@@ -37,12 +44,13 @@ class Server
     static void Main(string[] args)
     {
         Server server = new Server();
-        server.Start();
-
+        
         int numerator = 0;
 
         while (server.IsActive)
         {
+            server.Start();
+
             var client = server.AcceptClient();
 
             Thread worker = new Thread(() => WorkerThread.HandleClient(client));

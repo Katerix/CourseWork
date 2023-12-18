@@ -10,19 +10,25 @@
         /// </summary>
         /// <param name="keyword">The keyword.</param>
         /// <returns>List of file names</returns>s
-        Task<IEnumerable<string>> FindFiles(string keyword);
+        IEnumerable<string> FindFiles(string keyword);
 
         /// <summary>
         /// Determines whether the index contains the keyword.
         /// </summary>
         /// <param name="keyword">The keyword.</param>
         /// <returns>True or false</returns>
-        Task<bool> Contains(string keyword);
+        bool Contains(string keyword);
 
         /// <summary>
         /// Adds a keyword to the index.
         /// </summary>
         /// <param name="keyword">The keyword.</param>
-        Task AddToIndex(string keyword);
+        /// <param name="fileName">Name of the file.</param>
+        void AddToIndex(string keyword, string fileName);
+
+        /// <summary>
+        /// Initializes the index.
+        /// </summary>
+        void InitIndex();
     }
 }
