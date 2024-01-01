@@ -1,18 +1,31 @@
-﻿namespace CourseWork.BusinessLogic.Services.Implementations
+﻿namespace CourseWork.BusinessLogic.Services
 {
-    public class CustomThreadPool
+    public class CustomThreadPoolService
     {
+        /// <summary>
+        /// The working threads
+        /// </summary>
         private Thread[] workingThreads;
 
+        /// <summary>
+        /// The working thread amount
+        /// </summary>
         public readonly int _workingThreadAmount;
 
-        public CustomThreadPool(int workingThreadAmount = 4)
+        /// <summary>
+        /// Initializes a new instance of the <see cref="CustomThreadPoolService"/> class.
+        /// </summary>
+        /// <param name="workingThreadAmount">The working thread amount.</param>
+        public CustomThreadPoolService(int workingThreadAmount = 4)
         {
             _workingThreadAmount = workingThreadAmount;
             workingThreads = new Thread[_workingThreadAmount];
-            //InitThreads();
         }
 
+        /// <summary>
+        /// Initializes the threads.
+        /// </summary>
+        /// <param name="taskQueue">The task queue.</param>
         public void InitThreads(Queue<Task> taskQueue)
         {
             for (int i = 0; i < _workingThreadAmount; i++)
@@ -25,7 +38,7 @@
 
                         lock (taskQueue)
                         {
-                            if (taskQueue.Count == 0) break;
+                            if (taskQueue.Count == 0) continue;
 
                             task = taskQueue.Dequeue();
                         }
@@ -38,6 +51,9 @@
             }
         }
 
+        /// <summary>
+        /// Starts the threads.
+        /// </summary>
         public void StartThreads()
         {
             foreach (var thread in workingThreads)
