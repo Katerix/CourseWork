@@ -2,14 +2,6 @@
 {
     public static class IndexService
     {
-        const int START_COUNT = 7500;
-        const int END_COUNT = 7750;
-        const int START_COUNT_BIG = 30000;
-        const int END_COUNT_BIG = 31000;
-
-        static string BIG_DIRECTORY = " ";
-        static string[] Directories = { "", "" };
-
         /// <summary>
         /// Gets the words.
         /// </summary>
@@ -74,7 +66,10 @@
             {
                 calculatingThreads[i] = new Thread(() =>
                 {
-                    var result = FindFiles(keyword, (END_COUNT - START_COUNT) / threadAmount * i, (END_COUNT - START_COUNT) / threadAmount * (i + 1));
+                    var result = FindFiles(
+                        keyword, 
+                        (Constants.END_COUNT - Constants.START_COUNT) / threadAmount * i,
+                        (Constants.END_COUNT - Constants.START_COUNT) / threadAmount * (i + 1));
 
                     lock (result)
                     {
@@ -101,17 +96,23 @@
 
             Thread[] threads = new Thread[threadAmount];
 
-            foreach (var dir in Directories)
+            foreach (var dir in Constants.DIRECTORIES)
             {
                 for (int i = 0; i < threads.Length; i++)
                 {
-                    threads[i] = new Thread(() => InitIndexWithDirectory(dir, (END_COUNT - START_COUNT) / threadAmount * i, (END_COUNT - START_COUNT) / threadAmount * (i + 1)));
+                    threads[i] = new Thread(() => InitIndexWithDirectory(
+                        dir,
+                        (Constants.END_COUNT - Constants.START_COUNT) / threadAmount * i, 
+                        (Constants.END_COUNT - Constants.START_COUNT) / threadAmount * (i + 1)));
                 }
             }
 
             for (int i = 0; i < threads.Length; i++)
             {
-                threads[i] = new Thread(() => InitIndexWithDirectory(BIG_DIRECTORY, (END_COUNT_BIG - START_COUNT_BIG) / threadAmount * i, (END_COUNT_BIG - START_COUNT_BIG) / threadAmount * (i + 1)));
+                threads[i] = new Thread(() => InitIndexWithDirectory(
+                    Constants.BIG_DIRECTORY,
+                    (Constants.END_COUNT_BIG - Constants.START_COUNT_BIG) / threadAmount * i,
+                    (Constants.END_COUNT_BIG - Constants.START_COUNT_BIG) / threadAmount * (i + 1)));
             }
         }
 
