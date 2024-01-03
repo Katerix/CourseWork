@@ -3,6 +3,16 @@
     public static class Constants
     {
         /// <summary>
+        /// The small quantity
+        /// </summary>
+        public const int SMALL_QUANTITY = 250;
+
+        /// <summary>
+        /// The big quantity
+        /// </summary>
+        public const int BIG_QUANTITY = 250;
+
+        /// <summary>
         /// The start count
         /// </summary>
         public const int START_COUNT = 7500;
