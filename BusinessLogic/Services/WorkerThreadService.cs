@@ -32,7 +32,8 @@ namespace CourseWork.BusinessLogic.Services
                 {
                     Console.WriteLine("Starting calculation... \n");
 
-                    Task<List<string>> calculationTask = Task.Run(() => IndexService.PerformSearch(searchValue.ToString(), threadAmount).ToList());
+                    Task<List<string>> calculationTask = Task.Run(() => 
+                        IndexService.PerformSearch(searchValue.ToString(), threadAmount).ToList());
 
                     while (!calculationTask.IsCompleted)
                     {
@@ -45,7 +46,7 @@ namespace CourseWork.BusinessLogic.Services
                     }
 
                     List<string> results = await calculationTask;
-                    SendResults(client, stream, string.Join(' ', results));
+                    SendResults(client, stream, $"results:\n{string.Join('\n', results)}");
                     Console.WriteLine("Finished and sent results!\n");
 
                     break;
@@ -79,7 +80,7 @@ namespace CourseWork.BusinessLogic.Services
                 {
                     i += 2; tempString = string.Empty;
 
-                    while (i < configurations.Length)
+                    while (!(configurations[i] == '\0'))
                     {
                         tempString += configurations[i++];
                     }

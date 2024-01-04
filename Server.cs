@@ -14,7 +14,7 @@ public class Server
 
     public Queue<Task> TaskQueue { get; set; }
 
-    public CustomThreadPoolService CustomThreadPoolService;
+    public CustomThreadPoolService CustomThreadPool;
 
     public Server()
     {
@@ -30,21 +30,17 @@ public class Server
 
         // index initialization
         IndexService.InitIndex(threadAmount);
+        Console.WriteLine("Index inited!");
 
         // preparing thread pool to execute enqueued tasks
-        CustomThreadPoolService = new CustomThreadPoolService(threadAmount);
+        CustomThreadPool = new CustomThreadPoolService(TaskQueue, threadAmount);
 
-        CustomThreadPoolService.InitThreads(TaskQueue);
+        CustomThreadPool.InitThreads(TaskQueue);
 
         // activating server status
         IsActive = true;
 
         // starting the server
-        Start();
-    }
-
-    public void Start()
-    {
         _listener.Start();
         Console.WriteLine("Server is started and ready to receive calls...\n");
     }
@@ -55,10 +51,10 @@ public class Server
     {
         Server server = new Server();
 
+        server.CustomThreadPool.StartThreads();
+
         while (server.IsActive)
         {
-            server.CustomThreadPoolService.StartThreads();
-
             var client = server.AcceptClient();
 
             server.TaskQueue.Enqueue(WorkerThreadService.HandleClient(client));

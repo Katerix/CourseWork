@@ -13,12 +13,19 @@
         public readonly int _workingThreadAmount;
 
         /// <summary>
+        /// Gets or sets the task queue.
+        /// </summary>
+        public Queue<Task> TaskQueue { get; set; }
+
+        /// <summary>
         /// Initializes a new instance of the <see cref="CustomThreadPoolService"/> class.
         /// </summary>
         /// <param name="workingThreadAmount">The working thread amount.</param>
-        public CustomThreadPoolService(int workingThreadAmount = 4)
+        public CustomThreadPoolService(Queue<Task> taskQueue, int workingThreadAmount = 4)
         {
             _workingThreadAmount = workingThreadAmount;
+            TaskQueue = taskQueue;
+
             workingThreads = new Thread[_workingThreadAmount];
         }
 
@@ -42,8 +49,6 @@
 
                             task = taskQueue.Dequeue();
                         }
-
-                        task.RunSynchronously();
                     }
                 });
 
@@ -58,9 +63,6 @@
         {
             foreach (var thread in workingThreads)
                 thread.Start();
-
-            foreach (var thread in workingThreads)
-                thread.Join();
         }
     }
 }

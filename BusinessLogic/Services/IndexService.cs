@@ -10,34 +10,19 @@
         /// <summary>
         /// Gets the words.
         /// </summary>
-        public static List<KeyValuePair<string, List<string>>> Words { get; private set; }
+        public static List<KeyValuePair<string, HashSet<string>>> Words { get; private set; }
 
         /// <summary>
-        /// Adds to index.
+        /// 
         /// </summary>
-        /// <param name="keyword">The keyword.</param>
-        /// <param name="fileName">Name of the file.</param>
-        public static void AddToIndex(
-            List<KeyValuePair<string, List<string>>> words, 
-            string keyword, string fileName) => 
-            words.Add(new KeyValuePair<string, List<string>>(keyword, new List<string> { fileName }));
-
-        /// <summary>
-        /// Determines whether this instance contains the object.
-        /// </summary>
-        /// <param name="keyword">The keyword.</param>
-        /// <returns>
-        ///   <c>true</c> if [contains] [the specified keyword]; otherwise, <c>false</c>.
-        /// </returns>
-        public static bool ContainsWord(List<KeyValuePair<string, List<string>>> words, string keyword)
-        {
-            for (int i = 0; i < words.Count; i++)
-            {
-                if (words[i].Key == keyword && words[i].Value.Count > 0) return true;
-            }
-
-            return false;
-        }
+        /// <param name="arrayOfLists"></param>
+        static void CombineLists(List<List<KeyValuePair<string, HashSet<string>>>> arrayOfLists) => Words = arrayOfLists
+                .SelectMany(list => list)
+                .GroupBy(kvp => kvp.Key)
+                .Select(group => new KeyValuePair<string, HashSet<string>>(
+                    group.Key,
+                    group.SelectMany(kvp => kvp.Value).ToHashSet()))
+                .ToList();
 
         /// <summary>
         /// 
@@ -45,65 +30,18 @@
         /// <param name="words"></param>
         /// <param name="keyword"></param>
         /// <param name="fileName"></param>
-        /// <returns></returns>
-        public static bool ContainsFileInWordValues(List<KeyValuePair<string, List<string>>> words, string keyword, string fileName)
+        public static void SmartAdd(List<KeyValuePair<string, HashSet<string>>> words, string keyword, string fileName)
         {
             for (int i = 0; i < words.Count; i++)
             {
                 if (words[i].Key == keyword)
                 {
-                    foreach (var file in words[i].Value)
-                    {
-                        if (file == fileName) return true;
-                    }
-                }
-            }
-
-            return false;
-        }
-
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="words"></param>
-        /// <param name="keyword"></param>
-        /// <param name="fileName"></param>
-        public static void SmartAdd(List<KeyValuePair<string, List<string>>> words, string keyword, string fileName)
-        {
-            for (int i = 0; i < words.Count; i++)
-            {
-                if (words[i].Key == keyword)
-                {
-                    foreach (var file in words[i].Value)
-                    {
-                        if (file == fileName) return;
-                    }
-
                     words[i].Value.Add(fileName);
+                    return;
                 }
             }
 
-            words.Add(new KeyValuePair<string, List<string>>(keyword, new List<string> {fileName }));
-        }
-        
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="words"></param>
-        /// <param name="keyword"></param>
-        /// <param name="fileNames"></param>
-        public static void SmartAddRange(List<KeyValuePair<string, List<string>>> words, string keyword, List<string> fileNames)
-        {
-            for (int i = 0; i < words.Count; i++)
-            {
-                if (words[i].Key == keyword)
-                {
-                    words[i].Value.AddRange(fileNames);
-                    words[i].Value.Distinct();
-                }
-            }
-
-            words.Add(new KeyValuePair<string, List<string>>(keyword, fileNames));
+            words.Add(new KeyValuePair<string, HashSet<string>>(keyword, new HashSet<string> { fileName }));
         }
 
         /// <summary>
@@ -168,71 +106,61 @@
         /// <param name="threadAmount">The thread amount.</param>
         public static void InitIndex(int threadAmount = 1)
         {
-            Words = new List<KeyValuePair<string, List<string>>>();
+            Words = new List<KeyValuePair<string, HashSet<string>>>();
+
+            var results = new List<List<KeyValuePair<string, HashSet<string>>>>();
 
             Thread[] threads = new Thread[threadAmount];
 
-            foreach (var dir in Constants.DIRECTORIES)
+            for (int i = 0; i < threads.Length; i++)
             {
-                for (int i = 0; i < threads.Length; i++)
+                threads[i] = new Thread(() =>
                 {
-                    threads[i] = new Thread(() =>
+                    int j = 0;
+
+                    foreach (var dir in Constants.DIRECTORIES)
                     {
-                        var result = InitIndexWithDirectory(
+                        var r = InitIndexWithDirectory(
                             Directory.GetFiles(dir)
                             .Skip(Constants.START_COUNT + (Constants.END_COUNT - Constants.START_COUNT) / threadAmount * i)
                             .Take(Constants.SMALL_QUANTITY).ToArray());
 
                         lock (_lock)
                         {
-                            foreach (var kvp in result)
-                            {
-                                SmartAddRange(Words, kvp.Key, kvp.Value);
-                            }
+                            results.Add(r);
                         }
-                    });
-                }
 
-                foreach (var thread in threads)
-                    thread.Start();
+                        j++;
+                    }
 
-                foreach (var thread in threads)
-                    thread.Join();
-            }
-
-            for (int i = 0; i < threads.Length; i++)
-            {
-                threads[i] = new Thread(() =>
-                {
-                    var result = InitIndexWithDirectory(
+                    var t = InitIndexWithDirectory(
                         Directory.GetFiles(Constants.BIG_DIRECTORY)
                         .Skip(Constants.START_COUNT_BIG + (Constants.END_COUNT_BIG - Constants.START_COUNT_BIG) / threadAmount * i)
                         .Take(Constants.BIG_QUANTITY).ToArray());
 
                     lock (_lock)
                     {
-                        foreach (var kvp in result)
-                        {
-                            SmartAddRange(Words, kvp.Key, kvp.Value);
-                        }       
+                        results.Add(t);
                     }
-                });   
+                });
             }
-
+                
             foreach (var thread in threads)
                 thread.Start();
 
-            foreach (var thread in threads)
+           foreach (var thread in threads)
                 thread.Join();
+
+            CombineLists(results);
         }
 
         /// <summary>
         /// Initializes the index with directory.
         /// </summary>
         /// <param name="files">The files.</param>
-        private static List<KeyValuePair<string, List<string>>> InitIndexWithDirectory(string[] files)
+        private static List<KeyValuePair<string, HashSet<string>>> InitIndexWithDirectory(string[] files)
         {
-            var result = new List<KeyValuePair<string, List<string>>>();
+            var result = new List<KeyValuePair<string, HashSet<string>>>();
 
             for (int i = 0; i < files.Length; i++)
             {
@@ -243,8 +171,6 @@
                     SmartAdd(result, word, files[i]);
                 }
             }
-
-            Console.WriteLine("Directory inited!");
 
             return result;
         }
