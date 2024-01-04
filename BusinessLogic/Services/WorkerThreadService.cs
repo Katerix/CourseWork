@@ -33,7 +33,7 @@ namespace CourseWork.BusinessLogic.Services
                     Console.WriteLine("Starting calculation... \n");
 
                     Task<List<string>> calculationTask = Task.Run(() => 
-                        IndexService.PerformSearch(searchValue.ToString(), threadAmount).ToList());
+                        IndexService.PerformSearch(searchValue.ToString()).ToList());
 
                     while (!calculationTask.IsCompleted)
                     {
