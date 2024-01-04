@@ -10,7 +10,7 @@
         /// <summary>
         /// The big quantity
         /// </summary>
-        public const int BIG_QUANTITY = 3000;
+        public const int BIG_QUANTITY = 1000;
 
         /// <summary>
         /// The start count
@@ -30,7 +30,7 @@
         /// <summary>
         /// The end count big
         /// </summary>
-        public const int END_COUNT_BIG = 33000;
+        public const int END_COUNT_BIG = 31000;
 
         /// <summary>
         /// The big directory

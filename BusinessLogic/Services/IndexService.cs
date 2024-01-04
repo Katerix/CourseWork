@@ -1,4 +1,6 @@
-﻿namespace CourseWork.BusinessLogic.Services
+﻿using System.Collections.Concurrent;
+
+namespace CourseWork.BusinessLogic.Services
 {
     public class IndexService
     {
@@ -10,22 +12,22 @@
         /// <summary>
         /// Gets the words.
         /// </summary>
-        public static List<KeyValuePair<string, HashSet<string>>> Words { get; private set; }
+        public static Dictionary<string, HashSet<string>> Words { get; private set; }
 
         /// <summary>
-        /// 
+        /// Combines lists
         /// </summary>
         /// <param name="arrayOfLists"></param>
-        static void CombineLists(List<List<KeyValuePair<string, HashSet<string>>>> arrayOfLists) => Words = arrayOfLists
+        /*static void CombineLists(List<List<KeyValuePair<string, HashSet<string>>>> arrayOfLists) => Words = arrayOfLists
                 .SelectMany(list => list)
                 .GroupBy(kvp => kvp.Key)
                 .Select(group => new KeyValuePair<string, HashSet<string>>(
                     group.Key,
                     group.SelectMany(kvp => kvp.Value).ToHashSet()))
-                .ToList();
+                .ToList();*/
 
         /// <summary>
-        /// 
+        /// Smart add
         /// </summary>
         /// <param name="words"></param>
         /// <param name="keyword"></param>
@@ -55,7 +57,7 @@
         {
             for (int i = start; i < end; i++)
             {
-                if (Words[i].Key == keyword) return Words[i].Value;
+                //if (Words[i].Key == keyword) return Words[i].Value;
             }
 
             return new List<string>();
@@ -106,9 +108,7 @@
         /// <param name="threadAmount">The thread amount.</param>
         public static void InitIndex(int threadAmount = 1)
         {
-            Words = new List<KeyValuePair<string, HashSet<string>>>();
-
-            var results = new List<List<KeyValuePair<string, HashSet<string>>>>();
+            Words = new();
 
             Thread[] threads = new Thread[threadAmount];
 
@@ -116,32 +116,31 @@
             {
                 threads[i] = new Thread(() =>
                 {
-                    int j = 0;
-
                     foreach (var dir in Constants.DIRECTORIES)
                     {
-                        var r = InitIndexWithDirectory(
+                        //if (i >= threadAmount) return;
+
+                        InitIndexWithDirectory(
                             Directory.GetFiles(dir)
-                            .Skip(Constants.START_COUNT + (Constants.END_COUNT - Constants.START_COUNT) / threadAmount * i)
+                            .Skip(Constants.START_COUNT + i * (Constants.END_COUNT - Constants.START_COUNT) / threadAmount)
                             .Take(Constants.SMALL_QUANTITY).ToArray());
 
-                        lock (_lock)
+                        /*lock (_lock)
                         {
-                            results.Add(r);
-                        }
+                            Words.AddOrUpdate(r);
+                        }*/
 
-                        j++;
                     }
 
-                    var t = InitIndexWithDirectory(
+                    InitIndexWithDirectory(
                         Directory.GetFiles(Constants.BIG_DIRECTORY)
-                        .Skip(Constants.START_COUNT_BIG + (Constants.END_COUNT_BIG - Constants.START_COUNT_BIG) / threadAmount * i)
+                        .Skip(Constants.START_COUNT_BIG + i * (Constants.END_COUNT_BIG - Constants.START_COUNT_BIG) / threadAmount)
                         .Take(Constants.BIG_QUANTITY).ToArray());
 
-                    lock (_lock)
+                    /*lock (_lock)
                     {
                         results.Add(t);
-                    }
+                    }*/
                 });
             }
                 
@@ -150,29 +149,33 @@
 
            foreach (var thread in threads)
                 thread.Join();
-
-            CombineLists(results);
         }
 
         /// <summary>
         /// Initializes the index with directory.
         /// </summary>
         /// <param name="files">The files.</param>
-        private static List<KeyValuePair<string, HashSet<string>>> InitIndexWithDirectory(string[] files)
+        private static void InitIndexWithDirectory(string[] files)
         {
-            var result = new List<KeyValuePair<string, HashSet<string>>>();
-
             for (int i = 0; i < files.Length; i++)
             {
                 var wordsInFile = File.ReadAllText(files[i]).Split(new[] { ' ', ',', '.' }, StringSplitOptions.RemoveEmptyEntries);
 
                 foreach (var word in wordsInFile)
                 {
-                    SmartAdd(result, word, files[i]);
+                    lock(_lock)
+                    {
+                        if (!Words.ContainsKey(word))
+                        {
+                            Words.Add(word, new HashSet<string> { files[i] });
+                        }
+                        else
+                        {
+                            Words[word].Add(files[i]);
+                        }
+                    }
                 }
             }
-
-            return result;
         }
     }
 }
