@@ -8,6 +8,11 @@
         private static readonly object _lock;
 
         /// <summary>
+        /// Gets the files.
+        /// </summary>
+        public static string[] Files { get; private set; }
+
+        /// <summary>
         /// Gets the words.
         /// </summary>
         public static Dictionary<string, HashSet<string>> Words { get; private set; }
@@ -47,7 +52,7 @@
 
             Thread[] threads = new Thread[threadAmount];
 
-            var allFiles = GetAllFiles();
+            GetAllFiles();
 
             for (int i = 0; i < threads.Length; i++)
             {
@@ -56,7 +61,7 @@
 
                 threads[i] = new Thread(() =>
                 {
-                    var tempDictionary = InitIndexWithDirectory(ref allFiles, start, end);
+                    var tempDictionary = InitIndexWithDirectory(Files, start, end);
 
                     lock (_lock)
                     {
@@ -78,31 +83,57 @@
         /// Gets all files.
         /// </summary>
         /// <returns>File paths array.</returns>
-        private static string[] GetAllFiles()
+        public static void GetAllFiles(int threadAmount = 5)
         {
             List<string> files = new();
 
-            foreach (var dir in Constants.DIRECTORIES)
+            Thread[] threads = new Thread[threadAmount];
+
+            for (int i = 0; i < threadAmount - 1; i++)
             {
-                files.AddRange(Directory.GetFiles(dir)
+                int index = i;
+
+                threads[i] = new Thread(() => 
+                {
+                    var filesChunk = Directory.GetFiles(Constants.DIRECTORIES[index])
                     .Skip(Constants.START_COUNT)
                     .Take(Constants.SMALL_QUANTITY)
-                    .ToArray());
+                    .ToArray();
+
+                    lock (_lock)
+                    {
+                        files.AddRange(filesChunk);
+                    }
+                });
             }
 
-            files.AddRange(Directory.GetFiles(Constants.BIG_DIRECTORY)
+            threads[threadAmount - 1] = new Thread(() =>
+            {
+                var filesChunk = Directory.GetFiles(Constants.BIG_DIRECTORY)
                 .Skip(Constants.START_COUNT_BIG)
                 .Take(Constants.BIG_QUANTITY)
-                .ToArray());
+                .ToArray();
 
-            return files.ToArray();
+                lock (_lock)
+                {
+                    files.AddRange(filesChunk);
+                }
+            });
+
+            foreach (var th in threads)
+                th.Start();
+
+            foreach (var th in threads)
+                th.Join();
+
+            Files = files.ToArray();
         }
 
         /// <summary>
         /// Initializes the index with directory.
         /// </summary>
         /// <param name="files">The files.</param>
-        private static Dictionary<string, HashSet<string>> InitIndexWithDirectory(ref string[] files, int start, int end)
+        private static Dictionary<string, HashSet<string>> InitIndexWithDirectory(string[] files, int start, int end)
         {
             Dictionary<string, HashSet<string>> tempDictionary = new();
 
@@ -122,7 +153,6 @@
                     }
                 }
             }
-            //Console.WriteLine("chunk inited");
 
             return tempDictionary;
         }
