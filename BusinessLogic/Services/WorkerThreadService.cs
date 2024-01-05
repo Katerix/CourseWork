@@ -52,7 +52,12 @@ namespace CourseWork.BusinessLogic.Services
             }
         }
 
-        public static string CustomTrim(string input)
+        /// <summary>
+        /// Customs the trim.
+        /// </summary>
+        /// <param name="input">The input.</param>
+        /// <returns>Trimmed input string.</returns>
+        static string CustomTrim(string input)
         {
             string result = string.Empty;
 
@@ -72,7 +77,7 @@ namespace CourseWork.BusinessLogic.Services
         /// <param name="client">The client.</param>
         /// <param name="stream">The stream.</param>
         /// <param name="result">The result.</param>
-        public static void SendResults(TcpClient client, NetworkStream stream, string result)
+        static void SendResults(TcpClient client, NetworkStream stream, string result)
         {
             stream = client.GetStream();
             byte[] resultBytes = Encoding.ASCII.GetBytes(result);
@@ -85,7 +90,7 @@ namespace CourseWork.BusinessLogic.Services
         /// <param name="client">The client.</param>
         /// <param name="stream">The stream.</param>
         /// <returns>Client input string.</returns>
-        public static string ReadFromStream(TcpClient client, NetworkStream stream)
+        static string ReadFromStream(TcpClient client, NetworkStream stream)
         {
             stream = client.GetStream();
             byte[] data = new byte[20];
@@ -99,7 +104,7 @@ namespace CourseWork.BusinessLogic.Services
         /// <param name="client">The client.</param>
         /// <param name="stream">The stream.</param>
         /// <param name="message">The message.</param>
-        public static void WriteToStream(TcpClient client, NetworkStream stream, string message)
+        static void WriteToStream(TcpClient client, NetworkStream stream, string message)
         {
             stream = client.GetStream();
             byte[] bytes = Encoding.ASCII.GetBytes(message);

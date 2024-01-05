@@ -28,13 +28,6 @@
         }
 
         /// <summary>
-        /// Combines the dictionaries.
-        /// </summary>
-        static void CombineDictionaries() => Words = SubDictionaries.SelectMany(dict => dict)
-            .GroupBy(kvp => kvp.Key)
-            .ToDictionary(group => group.Key, group => group.First().Value);
-
-        /// <summary>
         /// Performs the search.
         /// </summary>
         /// <param name="keyword">The keyword.</param>
@@ -133,5 +126,12 @@
 
             return tempDictionary;
         }
+
+        /// <summary>
+        /// Combines the dictionaries.
+        /// </summary>
+        static void CombineDictionaries() => Words = SubDictionaries.SelectMany(dict => dict)
+            .GroupBy(kvp => kvp.Key)
+            .ToDictionary(group => group.Key, group => group.First().Value);
     }
 }

@@ -2,7 +2,11 @@
 {
     public class CustomThreadPoolService
     {
-        private readonly object _lock = new object();
+        /// <summary>
+        /// The lock
+        /// </summary>
+        private readonly object _lock;
+
         /// <summary>
         /// The working threads
         /// </summary>
@@ -11,7 +15,7 @@
         /// <summary>
         /// The working thread amount
         /// </summary>
-        public readonly int _workingThreadAmount;
+        private readonly int _workingThreadAmount;
 
         /// <summary>
         /// Gets or sets the task queue.
@@ -26,6 +30,7 @@
         {
             _workingThreadAmount = workingThreadAmount;
             TaskQueue = taskQueue;
+            _lock = new object();
 
             workingThreads = new Thread[_workingThreadAmount];
         }
