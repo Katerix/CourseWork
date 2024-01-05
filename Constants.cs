@@ -13,6 +13,11 @@
         public const int BIG_QUANTITY = 1000;
 
         /// <summary>
+        /// The total quantity
+        /// </summary>
+        public const int TOTAL_QUANTITY = 2000;
+
+        /// <summary>
         /// The start count
         /// </summary>
         public const int START_COUNT = 7500;

@@ -5,7 +5,7 @@
         /// <summary>
         /// The lock object
         /// </summary>
-        private static readonly object _lock = new object();
+        private static readonly object _lock;
 
         /// <summary>
         /// Gets the words.
@@ -13,10 +13,24 @@
         public static Dictionary<string, HashSet<string>> Words { get; private set; }
 
         /// <summary>
+        /// Gets or sets the sub dictionaries.
+        /// </summary>
+        private static List<Dictionary<string, HashSet<string>>> SubDictionaries { get; set; }
+
+        /// <summary>
+        /// Initializes the <see cref="IndexService"/> class.
+        /// </summary>
+        static IndexService()
+        {
+            _lock = new object();
+            Words = new();
+            SubDictionaries = new();
+        }
+
+        /// <summary>
         /// Combines the dictionaries.
         /// </summary>
-        /// <param name="dictionaries">The dictionaries.</param>
-        static void CombineDictionaries(List<Dictionary<string, HashSet<string>>> dictionaries) => Words = dictionaries.SelectMany(dict => dict)
+        static void CombineDictionaries() => Words = SubDictionaries.SelectMany(dict => dict)
             .GroupBy(kvp => kvp.Key)
             .ToDictionary(group => group.Key, group => group.First().Value);
 
@@ -24,9 +38,11 @@
         /// Performs the search.
         /// </summary>
         /// <param name="keyword">The keyword.</param>
-        /// <param name="threadAmount">The thread amount.</param>
         /// <returns>Found words which match the input value.</returns>
-        public static IEnumerable<string> PerformSearch(string keyword) => Words.ContainsKey(keyword) ? Words[keyword] : new List<string>();
+        public static IEnumerable<string> PerformSearch(string keyword)
+        {
+            return Words.ContainsKey(keyword) ? Words[keyword] : new List<string>();
+        }
 
         /// <summary>
         /// Initializes the index.
@@ -38,30 +54,20 @@
 
             Thread[] threads = new Thread[threadAmount];
 
-            List<Dictionary<string, HashSet<string>>> tempDictionaryForAllThreads = new();
+            var allFiles = GetAllFiles();
 
             for (int i = 0; i < threads.Length; i++)
             {
+                var start = i * (Constants.TOTAL_QUANTITY / threadAmount);
+                var end = (i + 1) * (Constants.TOTAL_QUANTITY / threadAmount);
+
                 threads[i] = new Thread(() =>
                 {
-                    List<Dictionary<string, HashSet<string>>> tempDictionary = new();
-
-                    foreach (var dir in Constants.DIRECTORIES)
-                    {
-                        tempDictionary.Add(InitIndexWithDirectory(
-                            Directory.GetFiles(dir)
-                            .Skip(Constants.START_COUNT + i * (Constants.END_COUNT - Constants.START_COUNT) / threadAmount)
-                            .Take(Constants.SMALL_QUANTITY).ToArray()));
-                    }
-
-                    tempDictionary.Add(InitIndexWithDirectory(
-                        Directory.GetFiles(Constants.BIG_DIRECTORY)
-                        .Skip(Constants.START_COUNT_BIG + i * (Constants.END_COUNT_BIG - Constants.START_COUNT_BIG) / threadAmount)
-                        .Take(Constants.BIG_QUANTITY).ToArray()));
+                    var tempDictionary = InitIndexWithDirectory(ref allFiles, start, end);
 
                     lock (_lock)
                     {
-                        tempDictionaryForAllThreads.AddRange(tempDictionary);
+                        SubDictionaries.Add(tempDictionary);
                     }
                 });
             }
@@ -72,18 +78,42 @@
            foreach (var thread in threads)
                 thread.Join();
 
-            CombineDictionaries(tempDictionaryForAllThreads);
+            CombineDictionaries();
+        }
+
+        /// <summary>
+        /// Gets all files.
+        /// </summary>
+        /// <returns>File paths array.</returns>
+        private static string[] GetAllFiles()
+        {
+            List<string> files = new();
+
+            foreach (var dir in Constants.DIRECTORIES)
+            {
+                files.AddRange(Directory.GetFiles(dir)
+                    .Skip(Constants.START_COUNT)
+                    .Take(Constants.SMALL_QUANTITY)
+                    .ToArray());
+            }
+
+            files.AddRange(Directory.GetFiles(Constants.BIG_DIRECTORY)
+                .Skip(Constants.START_COUNT_BIG)
+                .Take(Constants.BIG_QUANTITY)
+                .ToArray());
+
+            return files.ToArray();
         }
 
         /// <summary>
         /// Initializes the index with directory.
         /// </summary>
         /// <param name="files">The files.</param>
-        private static Dictionary<string, HashSet<string>> InitIndexWithDirectory(string[] files)
+        private static Dictionary<string, HashSet<string>> InitIndexWithDirectory(ref string[] files, int start, int end)
         {
             Dictionary<string, HashSet<string>> tempDictionary = new();
 
-            for (int i = 0; i < files.Length; i++)
+            for (int i = start; i < end; i++)
             {
                 var wordsInFile = File.ReadAllText(files[i]).Split(new[] { ' ', ',', '.' }, StringSplitOptions.RemoveEmptyEntries);
 
@@ -99,6 +129,7 @@
                     }
                 }
             }
+            //Console.WriteLine("chunk inited");
 
             return tempDictionary;
         }

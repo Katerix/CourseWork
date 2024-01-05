@@ -18,11 +18,9 @@ namespace CourseWork.BusinessLogic.Services
 
             byte[] input; string message;
 
-            var сonfigurations = ReadFromStream(client, stream);
+            var searchValue = CustomTrim(ReadFromStream(client, stream));
 
-            GetConfigs(сonfigurations ?? string.Empty, out int threadAmount, out string searchValue);
-
-            WriteToStream(client, stream, "received configs and data");
+            WriteToStream(client, stream, "received data");
 
             while (true)
             {
@@ -54,62 +52,18 @@ namespace CourseWork.BusinessLogic.Services
             }
         }
 
-        /// <summary>
-        /// Gets the configs.
-        /// </summary>
-        /// <param name="configurations">The configurations.</param>
-        /// <param name="threadAmount">The thread amount.</param>
-        /// <param name="searchValue">The search value.</param>
-        /// <exception cref="System.Exception">BAD DATA</exception>
-        public static void GetConfigs(string configurations, out int threadAmount, out string searchValue)
+        public static string CustomTrim(string input)
         {
-            int i = 0; string tempString = string.Empty;
+            string result = string.Empty;
 
-            if (configurations[i] == 'T')
+            foreach (var ch in input)
             {
-                i += 2;
+                if (ch != '\0')  result += ch;
 
-                while (configurations[i] != 'M')
-                {
-                    tempString += configurations[i++];
-                }
-
-                threadAmount = Parse(tempString);
-
-                if (configurations[i] == 'M')
-                {
-                    i += 2; tempString = string.Empty;
-
-                    while (!(configurations[i] == '\0'))
-                    {
-                        tempString += configurations[i++];
-                    }
-
-                    searchValue = tempString;
-
-                    return;
-                }
+                else return result;
             }
 
-            throw new Exception("BAD DATA");
-        }
-
-        /// <summary>
-        /// Parses the specified temporary string for number.
-        /// </summary>
-        /// <param name="tempStringForNumber">The temporary string for number.</param>
-        /// <returns>Parsed value.</returns>
-        /// <exception cref="System.Exception">BAD DATA</exception>
-        private static int Parse(string tempStringForNumber)
-        {
-            try
-            {
-                return int.Parse(tempStringForNumber);
-            }
-            catch (Exception)
-            {
-                throw new Exception("BAD DATA");
-            }
+            return result;
         }
 
         /// <summary>

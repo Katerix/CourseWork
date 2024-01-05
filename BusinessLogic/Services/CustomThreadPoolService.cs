@@ -2,6 +2,7 @@
 {
     public class CustomThreadPoolService
     {
+        private readonly object _lock = new object();
         /// <summary>
         /// The working threads
         /// </summary>
@@ -41,13 +42,20 @@
                 {
                     while (true)
                     {
+                        Thread.Sleep(1000);
+
                         Task task;
 
-                        lock (taskQueue)
+                        lock (_lock)
                         {
                             if (taskQueue.Count == 0) continue;
 
                             task = taskQueue.Dequeue();
+                        }
+
+                        if(!task.IsCompleted)
+                        {
+                            task.RunSynchronously();
                         }
                     }
                 });
