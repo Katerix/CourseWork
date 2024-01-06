@@ -23,19 +23,9 @@
         public const int START_COUNT = 7500;
 
         /// <summary>
-        /// The end count
-        /// </summary>
-        public const int END_COUNT = 7750;
-
-        /// <summary>
         /// The start count big
         /// </summary>
         public const int START_COUNT_BIG = 30000;
-
-        /// <summary>
-        /// The end count big
-        /// </summary>
-        public const int END_COUNT_BIG = 31000;
 
         /// <summary>
         /// The big directory

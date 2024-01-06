@@ -1,6 +1,7 @@
-﻿using CourseWork.BusinessLogic.Services;
+﻿using System.Diagnostics;
 using System.Net;
 using System.Net.Sockets;
+using CourseWork.BusinessLogic.Services;
 
 public class Server
 {
@@ -9,10 +10,6 @@ public class Server
     private readonly int _port;
 
     public readonly TcpListener _listener;
-
-    public bool IsActive { get; set; }
-
-    public Queue<Task> TaskQueue { get; set; }
 
     public CustomThreadPoolService CustomThreadPool;
 
@@ -23,22 +20,24 @@ public class Server
         _port = 6666;
         _listener = new TcpListener(_ipAddress, _port);
 
-        // prepering a queue for client requests
-        TaskQueue = new Queue<Task>();
+        int threadAmount = 4;
 
-        int threadAmount = 2;
+        var timer = new Stopwatch();
+            
+        timer.Start();
 
         // index initialization
         IndexService.InitIndex(threadAmount);
-        Console.WriteLine("Index inited!");
 
+        timer.Stop();
+
+        Console.WriteLine($"Index inited! {timer.ElapsedMilliseconds} ms.");
+        Console.WriteLine($"Threads: {threadAmount}\n");
+        
         // preparing thread pool to execute enqueued tasks
-        CustomThreadPool = new CustomThreadPoolService(TaskQueue, threadAmount);
+        CustomThreadPool = new CustomThreadPoolService(threadAmount);
 
-        CustomThreadPool.InitThreads(TaskQueue);
-
-        // activating server status
-        IsActive = true;
+        CustomThreadPool.InitThreads();
 
         // starting the server
         _listener.Start();
@@ -53,11 +52,11 @@ public class Server
 
         server.CustomThreadPool.StartThreads();
 
-        while (server.IsActive)
+        while (true)
         {
             var client = server.AcceptClient();
 
-            server.TaskQueue.Enqueue(WorkerThreadService.HandleClient(client));
+            server.CustomThreadPool.AddToQueue(async () => await WorkerThreadService.HandleClient(client));
         }
     }
 }

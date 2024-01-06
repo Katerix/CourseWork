@@ -13,6 +13,8 @@ namespace CourseWork.BusinessLogic.Services
         {
             NetworkStream stream = client.GetStream();
 
+            Console.WriteLine($"Thread {Thread.CurrentThread.ManagedThreadId} started to handle client.\n");
+
             WriteToStream(client, stream, "connected");
             Console.WriteLine("Client connected \n");
 

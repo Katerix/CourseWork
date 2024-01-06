@@ -20,52 +20,62 @@
         /// <summary>
         /// Gets or sets the task queue.
         /// </summary>
-        public Queue<Task> TaskQueue { get; set; }
+        public Queue<Action> TaskQueue { get; set; }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="CustomThreadPoolService"/> class.
         /// </summary>
         /// <param name="workingThreadAmount">The working thread amount.</param>
-        public CustomThreadPoolService(Queue<Task> taskQueue, int workingThreadAmount = 4)
+        public CustomThreadPoolService(int workingThreadAmount = 4)
         {
             _workingThreadAmount = workingThreadAmount;
-            TaskQueue = taskQueue;
+            TaskQueue = new();
             _lock = new object();
 
             workingThreads = new Thread[_workingThreadAmount];
         }
 
         /// <summary>
+        /// Adds to queue.
+        /// </summary>
+        /// <param name="task">The task to add.</param>
+        public void AddToQueue(Action task) 
+        {
+            lock (_lock)
+            {
+                TaskQueue.Enqueue(task);
+                Monitor.Pulse(_lock);
+            }
+        }
+
+        /// <summary>
         /// Initializes the threads.
         /// </summary>
-        /// <param name="taskQueue">The task queue.</param>
-        public void InitThreads(Queue<Task> taskQueue)
+        public void InitThreads()
         {
             for (int i = 0; i < _workingThreadAmount; i++)
             {
-                workingThreads[i] = new Thread(() =>
+                workingThreads[i] = new(() =>
                 {
                     while (true)
                     {
-                        Thread.Sleep(1000);
-
-                        Task task;
+                        Action task;
 
                         lock (_lock)
                         {
-                            if (taskQueue.Count == 0) continue;
+                            while (TaskQueue.Count == 0)
+                            {
+                                Monitor.Wait(_lock);
+                            }
 
-                            task = taskQueue.Dequeue();
+                            task = TaskQueue.Dequeue();
                         }
 
-                        if(!task.IsCompleted)
-                        {
-                            task.RunSynchronously();
-                        }
+                        task.Invoke();
                     }
                 });
 
-                workingThreads[i].Name = $"Thread {i + 1}";
+                Console.WriteLine($"Thread {workingThreads[i].ManagedThreadId} is created");
             }
         }
 

@@ -52,7 +52,7 @@
 
             Thread[] threads = new Thread[threadAmount];
 
-            GetAllFiles();
+            GetAllFilesParallel(threadAmount);
 
             for (int i = 0; i < threads.Length; i++)
             {
@@ -82,27 +82,58 @@
         /// <summary>
         /// Gets all files.
         /// </summary>
-        /// <returns>File paths array.</returns>
-        public static void GetAllFiles(int threadAmount = 5)
+        public static void GetAllFiles()
         {
+            List<string> files = new();
+
+            for (int i = 0; i < Constants.DIRECTORIES.Length; i++)
+            {
+                files.AddRange(Directory.GetFiles(Constants.DIRECTORIES[i])
+                            .Skip(Constants.START_COUNT)
+                            .Take(Constants.SMALL_QUANTITY)
+                            .ToArray());
+            }
+
+            files.AddRange(Directory.GetFiles(Constants.BIG_DIRECTORY)
+                                .Skip(Constants.START_COUNT_BIG)
+                                .Take(Constants.BIG_QUANTITY)
+                                .ToArray());
+
+            Files = files.ToArray();
+        }
+
+        /// <summary>
+        /// Gets all files parallel.
+        /// </summary>
+        /// <param name="threadAmount">The thread amount.</param>
+        public static void GetAllFilesParallel(int threadAmount = 5)
+        {
+            if (threadAmount != 3) threadAmount = 5;
+
             List<string> files = new();
 
             Thread[] threads = new Thread[threadAmount];
 
             for (int i = 0; i < threadAmount - 1; i++)
             {
-                int index = i;
+                int startRange = Constants.DIRECTORIES.Length / (threadAmount - 1) * i;
+                int endRange = Constants.DIRECTORIES.Length / (threadAmount - 1) * (i + 1);
 
                 threads[i] = new Thread(() => 
                 {
-                    var filesChunk = Directory.GetFiles(Constants.DIRECTORIES[index])
-                    .Skip(Constants.START_COUNT)
-                    .Take(Constants.SMALL_QUANTITY)
-                    .ToArray();
-
-                    lock (_lock)
+                    for (int j = startRange; j < endRange; j++)
                     {
-                        files.AddRange(filesChunk);
+                        int index = j;
+
+                        var filesChunk = Directory.GetFiles(Constants.DIRECTORIES[index])
+                                        .Skip(Constants.START_COUNT)
+                                        .Take(Constants.SMALL_QUANTITY)
+                                        .ToArray();
+
+                        lock (_lock)
+                        {
+                            files.AddRange(filesChunk);
+                        }
                     }
                 });
             }
@@ -110,9 +141,9 @@
             threads[threadAmount - 1] = new Thread(() =>
             {
                 var filesChunk = Directory.GetFiles(Constants.BIG_DIRECTORY)
-                .Skip(Constants.START_COUNT_BIG)
-                .Take(Constants.BIG_QUANTITY)
-                .ToArray();
+                                .Skip(Constants.START_COUNT_BIG)
+                                .Take(Constants.BIG_QUANTITY)
+                                .ToArray();
 
                 lock (_lock)
                 {
@@ -125,6 +156,7 @@
 
             foreach (var th in threads)
                 th.Join();
+            
 
             Files = files.ToArray();
         }
